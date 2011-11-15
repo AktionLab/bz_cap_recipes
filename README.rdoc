@@ -1,6 +1,6 @@
-= bz_cap_recipes
+= BZ Labs Capistrano recipes
 
-Description goes here.
+An assortment of capistrano bootstrapping and management tasks.
 
 == Contributing to bz_cap_recipes
  
@@ -14,6 +14,5 @@ Description goes here.
 
 == Copyright
 
-Copyright (c) 2011 Chris Boertien. See LICENSE.txt for
-further details.
+Copyright (c) 2011 BZ Labs. See LICENSE.txt for further details.
 

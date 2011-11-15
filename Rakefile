@@ -14,12 +14,12 @@ require 'rake'
 require 'jeweler'
 Jeweler::Tasks.new do |gem|
   # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
-  gem.name = "bz_cap_recipes"
+  gem.name = "bz-cap-recipes"
   gem.homepage = "http://github.com/Cluster444/bz_cap_recipes"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
-  gem.email = "chris.boertien@gmail.com"
+  gem.summary = %Q{BZ Labs Capistrano recipes}
+  gem.description = %Q{BZ Labs Capistrano recipes}
+  gem.email = "info@bz-labs.com"
   gem.authors = ["Chris Boertien"]
   # dependencies defined in Gemfile
 end
@@ -51,3 +51,4 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
