@@ -1,24 +1,23 @@
-require 'capistrano/bz_labs/common'
+require 'bz_labs/common'
 
 configuration.load do
   _cset :nginx_conf_dir, '/etc/nginx'
 
   config_file = <<-EOF
-upstream #{app_name}_#{rails_env} {
-  server unix:/tmp/unicorn-#{app_name}-#{rails_env}.sock fail_timeout=0;
+upstream #{app_name}_#{ENV['RAILS_ENV']} {
+  server unix:/tmp/unicorn-#{app_name}_#{ENV['RAILS_ENV']}.sock fail_timeout=0;
 }
 
 server {
   listen 80;
 
-  server_name #{app_name}.#{rails_env == 'staging' ? '.staging' : ''}.bz-labs.com;
+  server_name #{app_name}#{ENV['RAILS_ENV'] == 'staging' ? '.staging' : ''}.bz-labs.com;
   
   root #{appdir}/current/public;
-  access_log /var/log/nginx/#{app_name}-#{rails_env}-access.log;
-  error_log /var/log/nginx/#{app_name}-#{rails_env}-error.log;
+  access_log /var/log/nginx/#{app_name}_#{ENV['RAILS_ENV']}-access.log;
+  error_log /var/log/nginx/#{app_name}_#{ENV['RAILS_ENV']}-error.log;
 
   location ~ ^/assets/ {
-    gzip_static on;
     expires max;
     add_header Cache-Control public;
   }
@@ -30,7 +29,7 @@ server {
     proxy_redirect off;
 
     if (!-f $request_filename) {
-      proxy_pass http://#{app_name}_#{rails_env};
+      proxy_pass http://#{app_name}_#{ENV['RAILS_ENV']};
       break;
     }
   }
@@ -47,11 +46,11 @@ EOF
 
   namespace :nginx do
     task :setup do
-      write_local_file("config/nginx-#{rails_env}.conf", config_file)
+      write_local_file("config/nginx-#{ENV['RAILS_ENV']}.conf", config_file)
     end
 
     task :symlink do
-      run "rm -rf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{rails_env} && ln -nfs #{appdir}/current/config/nginx-#{rails_env}.conf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{rails_env}"
+      run "sudo rm -rf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{ENV['RAILS_ENV']} && sudo ln -nfs #{appdir}/current/config/nginx-#{ENV['RAILS_ENV']}.conf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{ENV['RAILS_ENV']}"
     end
 
     %w(start stop restart reload).each do |action|

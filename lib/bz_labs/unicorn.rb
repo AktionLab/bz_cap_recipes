@@ -1,12 +1,12 @@
-require 'capistrano/bz_labs/common'
+require 'bz_labs/common'
 
 configuration.load do
   config_file = <<-EOF
 app_path = "#{appdir}"
-worker_processes #{rails_env == 'production' ? 4 : 1}
-user #{user}, #{group}
+worker_processes #{ENV['RAILS_ENV'] == 'production' ? 4 : 1}
+user '#{user}', '#{group}'
 working_directory "#{appdir}/current"
-listen "/tmp/unicorn-#{app_name}-#{rails_env}.sock", :backlog => 64
+listen "/tmp/unicorn-#{app_name}_#{ENV['RAILS_ENV']}.sock", :backlog => 64
 timeout 30
 pid "#{appdir}/shared/pids/unicorn.pid"
 stderr_path "#{appdir}/shared/log/unicorn-stderr.log"
@@ -34,9 +34,9 @@ EOF
 
 set -e
 
-test -z "$RAILS_ENV" && RAILS_ENV=production
+test -z "$ENV['RAILS_ENV']" && ENV['RAILS_ENV']=production
 
-CMD="bundle exec unicorn -c config/unicorn.rb -E $RAILS_ENV -D
+CMD="bundle exec unicorn -c config/unicorn.rb -E $RAILS_ENV -D"
 export PID=tmp/pids/unicorn.pid
 export OLD_PID="$PID.oldbin"
 
@@ -95,7 +95,7 @@ esac
 
 EOF
 
-  _cset(:symlinks)  { symlinks << 'config/unicorn.rb' }
+  symlinks << 'config/unicorn.rb'
 
   after 'deploy:setup', 'unicorn:setup'
 
@@ -103,13 +103,14 @@ EOF
     task :setup do
       write_remote_file('shared/config/unicorn.rb', config_file)
       write_local_file('script/unicorn', control_script)
+      `chmod +x script/unicorn`
     end
   end
 
   namespace :deploy do
     %w(start stop restart).each do |action|
       task action do
-        run_cd("script/unicorn #{action}")
+        run("cd #{current_path} && RAILS_ENV=#{ENV['RAILS_ENV']} script/unicorn #{action}")
       end
     end
   end

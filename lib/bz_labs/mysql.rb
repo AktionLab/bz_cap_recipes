@@ -1,36 +1,27 @@
-require 'capistrano/bz_labs/common'
+require 'bz_labs/common'
 require 'active_support'
 
 configuration.load do
-  _cset :password, SecureRandom.base64(20)
-  _cset(:symlinks) { symlinks << 'config/database.yml' }
-  _cset(:rake_tasks) { rake_tasks << 'db:migrate' }
+  _cset :mysql_password, SecureRandom.base64(20)
+  symlinks << 'config/database.yml'
+  rake_tasks << 'db:migrate'
 
-  config_file <<-EOF
-#{rails_env}:
-  adapter: mysql
-  database: #{app_name}_#{rails_env}
-  encoding: unicode
-  username: #{user}
-  password: #{password}
-
-EOF
+  config_file = <<-EOF
+#{ENV['RAILS_ENV']}:
+  adapter: mysql2
+  database: #{app_name}_#{ENV['RAILS_ENV']}
+  username: #{user}_#{ENV['RAILS_ENV']}
+  password: #{mysql_password}
+  EOF
   
-  my_cnf_file <<-EOF
-[client]
-user=#{user}
-password=#{password}
-
-EOF
-
   after 'deploy:setup', 'db:setup'
 
   namespace :db do
     task :setup do
-      write_remote_file('config/database.yml', config_file)
-      run %Q(echo "#{my_cnf_file}" >/home/#{user}/.my.cnf)
-      run %Q(echo "CREATE USER '#{user}'@'localhost' identified_by '#{password}';" | sudo su -c mysql)
-      run %Q(echo "GRANT ALL ON #{app_name}_#{rails_env}.* to '#{user}'@'localhost';" | sudo su -c mysql)
+      write_remote_file('shared/config/database.yml', config_file)
+      run %Q(echo "CREATE DATABASE #{app_name}_#{ENV['RAILS_ENV']};" | sudo su -c mysql)
+      run %Q(echo "CREATE USER '#{user}_#{ENV['RAILS_ENV']}'@'localhost' IDENTIFIED BY '#{mysql_password}';" | sudo su -c mysql; true)
+      run %Q(echo "GRANT ALL ON #{app_name}_#{ENV['RAILS_ENV']}.* TO '#{user}'@'localhost';" | sudo su -c mysql)
       run %Q(echo "FLUSH PRIVILEGES;" | sudo su -c mysql)
     end
   end

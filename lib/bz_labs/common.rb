@@ -15,15 +15,14 @@ def run_cd(command)
 end
 
 def run_rake(tasks)
-  run_cd("RAILS_ENV=#{rails_env} bundle exec rake #{tasks}")
+  run_cd("RAILS_ENV=#{ENV['RAILS_ENV']} bundle exec rake #{tasks}")
+end 
+def write_remote_file(name, text)
+  run "cd #{appdir} && mkdir -p `dirname #{name}` && if [ ! -f #{name} ]; then echo '" + text + "' >#{name}; fi"
 end
 
-def write_remote_config(name, text)
-  run "cd #{appdir} && mkdir -p `dirname #{name}` && if [ ! -f #{name} ]; then echo '#{text}' >#{name}; fi"
-end
-
-def write_local_config(name, text)
-  return if File.exists("#{Rails.root.to_s}/#{name}")
-  File.open("#{Rails.root.to_s}/#{name}", 'wb') {|file| file << text}
+def write_local_file(name, text)
+  return if File.exists?(name)
+  File.open(name, 'wb') {|file| file << text}
 end
 
