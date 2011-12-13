@@ -30,7 +30,7 @@ configuration.load do
 
   # Deploy Details
   _cset :keep_releases, 2
-  set :symlinks,      []
+  _cset :symlinks,    []
   set :rake_tasks,    []
   _cset(:rvm_ruby)      { abort "Please specify the ruby version to use, set :rvm_ruby, 'ruby-1.9.2-p290'" }
   _cset(:rvm_ruby_string) { "#{rvm_ruby}@#{app_name}" }
