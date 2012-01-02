@@ -1,12 +1,13 @@
 require 'bz_labs/common'
 
-configuration.load do
-  config_file = <<-EOF
+CAP_ENV.prepare do |env|
+  configuration.load do
+    config_file = <<-EOF
 app_path = "#{appdir}"
-worker_processes #{ENV['RAILS_ENV'] == 'production' ? 4 : 1}
+worker_processes #{env == 'production' ? 4 : 1}
 user '#{user}', '#{group}'
 working_directory "#{appdir}/current"
-listen "/tmp/unicorn-#{app_name}_#{ENV['RAILS_ENV']}.sock", :backlog => 64
+listen "/tmp/unicorn-#{app_name}_#{env}.sock", :backlog => 64
 timeout 30
 pid "#{appdir}/shared/pids/unicorn.pid"
 stderr_path "#{appdir}/shared/log/unicorn-stderr.log"
@@ -36,16 +37,14 @@ after_fork do |server, worker|
     ActiveRecord::Base.establish_connection
 end
 
-EOF
-  
-  control_script = <<-EOF
+  EOF
+    
+    control_script = <<-EOF
 #!/bin/sh
 
 set -e
 
-test -z "$ENV['RAILS_ENV']" && ENV['RAILS_ENV']=production
-
-CMD="bundle exec unicorn -c config/unicorn.rb -E $RAILS_ENV -D"
+CMD="bundle exec unicorn -c config/unicorn.rb -E #{env} -D"
 export PID=tmp/pids/unicorn.pid
 export OLD_PID="$PID.oldbin"
 
@@ -102,26 +101,26 @@ case $1 in
   *) echo >&2 "Usage: $0 <start|stop|restart>" && exit 1 ;;
 esac
 
-EOF
+  EOF
 
-  symlinks << 'config/unicorn.rb'
+    symlinks << 'config/unicorn.rb'
 
-  after 'deploy:setup', 'unicorn:setup'
+    after 'deploy:setup', 'unicorn:setup'
 
-  namespace :unicorn do
-    task :setup do
-      write_remote_file('shared/config/unicorn.rb', config_file)
-      write_local_file('script/unicorn', control_script)
-      `chmod +x script/unicorn`
+    namespace :unicorn do
+      task :setup do
+        write_remote_file('shared/config/unicorn.rb', config_file)
+        write_local_file('script/unicorn', control_script)
+        `chmod +x script/unicorn`
+      end
     end
-  end
 
-  namespace :deploy do
-    %w(start stop restart).each do |action|
-      task action do
-        run("cd #{current_path} && RAILS_ENV=#{ENV['RAILS_ENV']} script/unicorn #{action}")
+    namespace :deploy do
+      %w(start stop restart).each do |action|
+        task action do
+          run("cd #{current_path} && RAILS_ENV=#{env} script/unicorn #{action}")
+        end
       end
     end
   end
 end
-

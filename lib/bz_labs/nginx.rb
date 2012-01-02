@@ -1,21 +1,22 @@
 require 'bz_labs/common'
 
-configuration.load do
-  _cset :nginx_conf_dir, '/etc/nginx'
+CAP_ENV.prepare do |env|
+  configuration.load do
+    _cset :nginx_conf_dir, '/etc/nginx'
 
-  config_file = <<-EOF
-upstream #{app_name}_#{ENV['RAILS_ENV']} {
-  server unix:/tmp/unicorn-#{app_name}_#{ENV['RAILS_ENV']}.sock fail_timeout=0;
+    config_file = <<-EOF
+upstream #{app_name}_#{env} {
+  server unix:/tmp/unicorn-#{app_name}_#{env}.sock fail_timeout=0;
 }
 
 server {
   listen 80;
 
-  server_name #{app_name}#{ENV['RAILS_ENV'] == 'staging' ? '.staging' : ''}.bz-labs.com;
+  server_name #{app_name}#{env == 'staging' ? '.staging' : ''}.bz-labs.com;
   
   root #{appdir}/current/public;
-  access_log /var/log/nginx/#{app_name}_#{ENV['RAILS_ENV']}-access.log;
-  error_log /var/log/nginx/#{app_name}_#{ENV['RAILS_ENV']}-error.log;
+  access_log /var/log/nginx/#{app_name}_#{env}-access.log;
+  error_log /var/log/nginx/#{app_name}_#{env}-error.log;
 
   location ~ ^/assets/ {
     expires max;
@@ -29,7 +30,7 @@ server {
     proxy_redirect off;
 
     if (!-f $request_filename) {
-      proxy_pass http://#{app_name}_#{ENV['RAILS_ENV']};
+      proxy_pass http://#{app_name}_#{env};
       break;
     }
   }
@@ -38,26 +39,26 @@ server {
   error_page 500 502 503 504 /500.html;
 }
 
-EOF
-  
-  after 'deploy:setup', 'nginx:setup'
-  before 'deploy:restart', 'nginx:symlink'
-  after 'nginx:symlink', 'nginx:reload'
+  EOF
+    
+    after 'deploy:setup', 'nginx:setup'
+    before 'deploy:restart', 'nginx:symlink'
+    after 'nginx:symlink', 'nginx:reload'
 
-  namespace :nginx do
-    task :setup do
-      write_local_file("config/nginx-#{ENV['RAILS_ENV']}.conf", config_file)
-    end
+    namespace :nginx do
+      task :setup do
+        write_local_file("config/nginx-#{env}.conf", config_file)
+      end
 
-    task :symlink do
-      run "sudo rm -rf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{ENV['RAILS_ENV']} && sudo ln -nfs #{appdir}/current/config/nginx-#{ENV['RAILS_ENV']}.conf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{ENV['RAILS_ENV']}"
-    end
+      task :symlink do
+        run "sudo rm -rf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{env} && sudo ln -nfs #{appdir}/current/config/nginx-#{env}.conf #{nginx_conf_dir}/sites-enabled/#{app_name}-#{env}"
+      end
 
-    %w(start stop restart reload).each do |action|
-      task action do
-        run "sudo service nginx #{action}"
+      %w(start stop restart reload).each do |action|
+        task action do
+          run "sudo service nginx #{action}"
+        end
       end
     end
   end
 end
-
