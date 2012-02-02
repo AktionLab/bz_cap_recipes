@@ -54,6 +54,7 @@ CAP_ENV.prepare do |env|
     role :web, server_web
     role :app, server_app
     role :db, server_db
+    _cset :port,          22
 
     before 'deploy:finalize_update', 'deploy:create_symlinks'
     before 'deploy:symlink', 'deploy:run_rake_tasks'
